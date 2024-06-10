@@ -2,7 +2,7 @@ import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Form,
   FormControl,
@@ -16,22 +16,37 @@ import { Input } from '@/components/ui/input';
 import { SignupValidation } from '@/lib/validation';
 import Loader from '@/components/ui/shared/Loader';
 import { createUserAccount } from '@/lib/appwrite/api';
+import { Toaster } from '@/components/ui/toaster';
+import {
+  useCreateUserAccount,
+  useSignInAccount,
+} from '@/lib/react-query/queriesAndMutation';
+import { useToast } from '@/components/ui/use-toast';
+import { useUserContext } from '@/context/AuthContext';
 
 // const formSchema = z.object({
 //   username: z.string().min(2).max(50),
 // });
 
 const SignupForm = () => {
-  const isLoading = false;
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
 
+  // const isLoading = false;
+
+  const { mutateAsync: createUserAccount, isPending: isCreatingAccount } =
+    useCreateUserAccount();
+  const { mutateAsync: signInAccount, isPending: isSigningIn } =
+    useSignInAccount();
   // 1. Define your form.
   const form = useForm<z.infer<typeof SignupValidation>>({
     resolver: zodResolver(SignupValidation),
     defaultValues: {
-      "name": '',
-      "username": '',
-      "email": '',
-      "password": '',
+      name: '',
+      username: '',
+      email: '',
+      password: '',
     },
   });
 
@@ -39,8 +54,77 @@ const SignupForm = () => {
   async function onSubmit(values: z.infer<typeof SignupValidation>) {
     //create the user
     const newUser = await createUserAccount(values);
-    console.log('newuser',newUser)
+
+    if (!newUser) {
+      return toast({
+        title: 'Sign up failed. Please try again.'
+      });
+    }
+
+    const session = await signInAccount({
+      email: values.email,
+      password: values.password,
+    });
+
+    if (!session) {
+      return toast({
+        title: 'Sign in failed. Please try again.'
+      });
+    }
+
+    const isLoggedIn = await checkAuthUser()
+    if (isLoggedIn) {
+      form.reset();
+
+      navigate('/');
+    } else {
+      toast({ title: 'Login failed. Please try again.' });
+
+      return;
+    }
+
   }
+
+  // const handleSignup = async (user: z.infer<typeof SignupValidation>) => {
+  //   try {
+  //     const newUser = await createUserAccount(user);
+
+  //     if (!newUser) {
+  //       toast({ title: 'Sign up failed. Please try again.' });
+
+  //       return;
+  //     }
+
+  //     const session = await signInAccount({
+  //       email: user.email,
+  //       password: user.password,
+  //     });
+
+  //     if (!session) {
+  //       toast({
+  //         title: 'Something went wrong. Please login your new account',
+  //       });
+
+  //       navigate('/sign-in');
+
+  //       return;
+  //     }
+
+  //     const isLoggedIn = await checkAuthUser();
+
+  //     if (isLoggedIn) {
+  //       form.reset();
+
+  //       navigate('/');
+  //     } else {
+  //       toast({ title: 'Login failed. Please try again.' });
+
+  //       return;
+  //     }
+  //   } catch (error) {
+  //     console.log({ error });
+  //   }
+  // };
 
   const Fieldnames = ['name', 'username', 'email', 'password'];
 
@@ -90,7 +174,7 @@ const SignupForm = () => {
               />
             ))}
             <Button type="submit" className="shad-button_primary">
-              {isLoading ? (
+              {isCreatingAccount ? (
                 <div className="flex-center gap-2">
                   <Loader /> Loading...
                 </div>
@@ -100,7 +184,12 @@ const SignupForm = () => {
             </Button>
             <p className="text-small-regular text-light-2 text-center mt-2">
               Already have an Account?
-              <Link to="/sign-in" className="text-primary-500 text-small=semibold ml-1">Log in</Link>
+              <Link
+                to="/sign-in"
+                className="text-primary-500 text-small=semibold ml-1"
+              >
+                Log in
+              </Link>
             </p>
           </form>
         </div>
