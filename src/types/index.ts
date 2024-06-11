@@ -46,3 +46,20 @@ export type INewUser = {
   username: string;
   password: string;
 };
+
+
+// // types.ts
+// export interface Post {
+//   $id: string;
+//   // other post properties
+//   title: string;
+//   content: string;
+//   author: string;
+//   createdAt: string;
+// }
+
+// export interface InfinitePostsResponse {
+//   documents: Post[];
+//   // other response properties
+//   totalCount: number;
+// }

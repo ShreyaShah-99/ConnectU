@@ -15,8 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { SignupValidation } from '@/lib/validation';
 import Loader from '@/components/ui/shared/Loader';
-import { createUserAccount } from '@/lib/appwrite/api';
-import { Toaster } from '@/components/ui/toaster';
+
 import {
   useCreateUserAccount,
   useSignInAccount,
@@ -31,13 +30,13 @@ import { useUserContext } from '@/context/AuthContext';
 const SignupForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
+  const { checkAuthUser } = useUserContext();
 
   // const isLoading = false;
 
   const { mutateAsync: createUserAccount, isPending: isCreatingAccount } =
     useCreateUserAccount();
-  const { mutateAsync: signInAccount, isPending: isSigningIn } =
+  const { mutateAsync: signInAccount} =
     useSignInAccount();
   // 1. Define your form.
   const form = useForm<z.infer<typeof SignupValidation>>({
@@ -126,7 +125,7 @@ const SignupForm = () => {
   //   }
   // };
 
-  const Fieldnames = ['name', 'username', 'email', 'password'];
+  const Fieldnames = ['name', 'username', 'email', 'password'] as const;
 
   return (
     <>
@@ -144,7 +143,7 @@ const SignupForm = () => {
             onSubmit={form.handleSubmit(onSubmit)}
             className="flex flex-col gap-5 w-full mt-4"
           >
-            {Fieldnames?.map((item, index) => (
+            {Fieldnames?.map((item) => (
               <FormField
                 control={form.control}
                 name={item}
